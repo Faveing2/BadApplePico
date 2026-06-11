@@ -4,7 +4,8 @@ from pathlib import Path
 projectPath = "pico/"
 projectFiles = [
     "main.py",
-    "epd.py"
+    "epd.py",
+    "video.bin"
 ]
 
 try:
@@ -30,26 +31,26 @@ for file in projectFiles:
 
 ### Write data
 
-subprocess.run(
-    ["mpremote", "mkdir", "data"],
-    check=True
-)
+# subprocess.run(
+#     ["mpremote", "mkdir", "data"],
+#     check=True
+# )
 
-dir_path = Path("data/")
-#files = sorted([f.name for f in dir_path.iterdir() if f.is_file()])[0:99]
+# dir_path = Path("data/")
+# #files = sorted([f.name for f in dir_path.iterdir() if f.is_file()])[0:99]
 
-files = [str(idx)+".bin" for idx in range(0,4000)]
+# files = [str(idx)+".bin" for idx in range(0,4000)]
 
-#print(files)
-for file in files:
-    #print(file)
-    # if "210.bin" != file:
-    #     continue
+# #print(files)
+# for file in files:
+#     #print(file)
+#     # if "210.bin" != file:
+#     #     continue
 
-    try:
-        subprocess.run(
-            ["mpremote", "cp", "data/"+file, ":/data/"+file],
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        print(e.output)
+#     try:
+#         subprocess.run(
+#             ["mpremote", "cp", "data/"+file, ":/data/"+file],
+#             check=True
+#         )
+#     except subprocess.CalledProcessError as e:
+#         print(e.output)

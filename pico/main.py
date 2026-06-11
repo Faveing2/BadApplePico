@@ -2,8 +2,9 @@ import machine
 import time
 
 import epd
-
+import struct
 import deflate
+import io
 
 TOTAL=3999
 
@@ -21,10 +22,22 @@ def display_frame(display, frame_idx):
     display.display()
 
 def loop():
-    index = 0
-    while index <= TOTAL:
-        display_frame(display, index)
-        index += 1
+    with open("video.bin", "rb") as f:
+        while True:
+            size_bytes = f.read(4)
+            if not size_bytes:
+                break
+        
+            (size,) = struct.unpack("<I", size_bytes)
+
+            comp = f.read(size)
+
+            with deflate.DeflateIO(io.BytesIO(comp), deflate.ZLIB) as d:
+                frame = bytearray(d.read())
+
+                display.buffer_balck[:] = frame
+
+                display.display()
 
 while True:
     loop()
