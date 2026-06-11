@@ -3,19 +3,29 @@ import cv2
 from PIL import Image
 import numpy as np
 
-import matplotlib.pyplot as plt
-#import heatshrink2
 import zlib
 import deflate
 
 import struct
 
-WIDTH = 122
-HEIGHT = 250
+WIDTH = 128
+HEIGHT = 64
 
 DATA_DIR = "data/"
 
-def encode_video(filepath):
+DITHER = False
+BAYER_8X8 = np.array([
+    [ 0,48,12,60, 3,51,15,63],
+    [32,16,44,28,35,19,47,31],
+    [ 8,56, 4,52,11,59, 7,55],
+    [40,24,36,20,43,27,39,23],
+    [ 2,50,14,62, 1,49,13,61],
+    [34,18,46,30,33,17,45,29],
+    [10,58, 6,54, 9,57, 5,53],
+    [42,26,38,22,41,25,37,21]
+], dtype=np.uint8)
+
+def encode_video(filepath, dither):
 
     cap = cv2.VideoCapture(filepath)
 
@@ -61,40 +71,25 @@ def encode_video(filepath):
             frame_idx += 1
             break  
         rgb_img = rgb_img.resize((height, width), Image.Resampling.LANCZOS)
-
-        rgb_img = rgb_img.convert("L")
         #bw_img = rgb_img.convert(,, dither=Image.Dither.ORDERED)
 
-        BAYER_4X4 = np.array([
-            [ 0,  8,  2, 10],
-            [12,  4, 14,  6],
-            [ 3, 11,  1,  9],
-            [15,  7, 13,  5]
-        ], dtype=np.uint8)
+        if dither:
+            rgb_img = rgb_img.convert("L")
+            gray = np.array(rgb_img, dtype=np.uint8)
 
-        BAYER_8X8 = np.array([
-            [ 0,48,12,60, 3,51,15,63],
-            [32,16,44,28,35,19,47,31],
-            [ 8,56, 4,52,11,59, 7,55],
-            [40,24,36,20,43,27,39,23],
-            [ 2,50,14,62, 1,49,13,61],
-            [34,18,46,30,33,17,45,29],
-            [10,58, 6,54, 9,57, 5,53],
-            [42,26,38,22,41,25,37,21]
-        ], dtype=np.uint8)
+            h, w = gray.shape
 
-        gray = np.array(rgb_img, dtype=np.uint8)
+            thresholds = np.tile(
+                BAYER_8X8,
+                (h // 4 + 1, w // 4 + 1)
+            )[:h, :w]
 
-        h, w = gray.shape
+            thresholds = thresholds * 4
 
-        thresholds = np.tile(
-            BAYER_8X8,
-            (h // 4 + 1, w // 4 + 1)
-        )[:h, :w]
-
-        thresholds = thresholds * 4
-
-        bw_data = (gray > thresholds).astype(np.uint8) * 255
+            bw_data = (gray > thresholds).astype(np.uint8) * 255
+        else:
+            rgb_data = np.array(rgb_img)
+            bw_data = rgb_data.mean(axis=2)>127
 
         #rgb_data = np.array(rgb_img)
         #bw_data = rgb_data.mean(axis=2)>127
@@ -148,11 +143,17 @@ def main():
     parser = argparse.ArgumentParser(description="Script to encode a video to be played on the Pico")
     
     parser.add_argument("file", help="Filepath to video")
+    parser.add_argument("-W", "--width", type=int, default=120, help="Width of the video")
+    parser.add_argument("-H", "--height", type=int, default=250, help="Height of the video")
+    parser.add_argument("-d", "--dither", action="store_true", help="Enable dithering in video output (Will increase filesize)")
 
     args = parser.parse_args()
     filepath = args.file
 
-    encode_video(filepath)
+    if args.dither:
+        print("Applying Dither")
+
+    encode_video(filepath, args.dither)
 
 if __name__ == "__main__":
     main()
