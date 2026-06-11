@@ -62,8 +62,43 @@ def encode_video(filepath):
             break  
         rgb_img = rgb_img.resize((height, width), Image.Resampling.LANCZOS)
 
-        rgb_data = np.array(rgb_img)
-        bw_data = rgb_data.mean(axis=2)>127
+        rgb_img = rgb_img.convert("L")
+        #bw_img = rgb_img.convert(,, dither=Image.Dither.ORDERED)
+
+        BAYER_4X4 = np.array([
+            [ 0,  8,  2, 10],
+            [12,  4, 14,  6],
+            [ 3, 11,  1,  9],
+            [15,  7, 13,  5]
+        ], dtype=np.uint8)
+
+        BAYER_8X8 = np.array([
+            [ 0,48,12,60, 3,51,15,63],
+            [32,16,44,28,35,19,47,31],
+            [ 8,56, 4,52,11,59, 7,55],
+            [40,24,36,20,43,27,39,23],
+            [ 2,50,14,62, 1,49,13,61],
+            [34,18,46,30,33,17,45,29],
+            [10,58, 6,54, 9,57, 5,53],
+            [42,26,38,22,41,25,37,21]
+        ], dtype=np.uint8)
+
+        gray = np.array(rgb_img, dtype=np.uint8)
+
+        h, w = gray.shape
+
+        thresholds = np.tile(
+            BAYER_8X8,
+            (h // 4 + 1, w // 4 + 1)
+        )[:h, :w]
+
+        thresholds = thresholds * 4
+
+        bw_data = (gray > thresholds).astype(np.uint8) * 255
+
+        #rgb_data = np.array(rgb_img)
+        #bw_data = rgb_data.mean(axis=2)>127
+        #bw_data = np.array(bw_img, dtype=np.uint8)
         #bw_data = np.rot90(bw_data, -1)
 
         #bw_data[100, :] = 1
@@ -93,7 +128,7 @@ def encode_video(filepath):
 
         # with open(DATA_DIR+str(frame_idx)+".bin", "wb") as file:
         #     file.write(deflate.zlib_compress(buffer))
-
+        deflate.zlib_decompress
         frames.append(buffer)
 
         frame_idx += 1
