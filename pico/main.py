@@ -23,6 +23,7 @@ def display_frame(display, frame_idx):
 
 def loop():
     with open("video.bin", "rb") as f:
+        index = 0
         while True:
             size_bytes = f.read(4)
             if not size_bytes:
@@ -38,6 +39,8 @@ def loop():
                 display.buffer_balck[:] = frame
 
                 display.display()
+                print("FRAME " + str(index))
+                index += 1
 
 while True:
     loop()
